@@ -1,0 +1,24 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../domain/trash_repository.dart';
+import '../domain/trashed_task.dart';
+
+class LocalTrashRepository implements TrashRepository {
+  static const _key = 'trash_v1';
+
+  @override
+  Future<List<TrashedTask>> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw == null) return [];
+    return (jsonDecode(raw) as List)
+        .map((e) => TrashedTask.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<void> save(List<TrashedTask> items) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(items.map((i) => i.toJson()).toList()));
+  }
+}
