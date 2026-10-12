@@ -1,4 +1,4 @@
-name: Flutter APK Build
+name: Build APK
 
 on:
   workflow_dispatch:
@@ -14,19 +14,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.24.5
+          flutter-version: "3.24.5"
 
-      - name: Flutter Version
-        run: flutter --version
-
-      - name: Get Packages
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+      - run: flutter --version
