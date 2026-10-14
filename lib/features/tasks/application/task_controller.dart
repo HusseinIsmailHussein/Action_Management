@@ -159,8 +159,9 @@ class TaskController extends AsyncNotifier<List<TaskItem>> {
     ];
     final slots = items.map(effectiveOrder).toList()..sort();
     for (var i = 1; i < slots.length; i++) {
-      if (slots[i] <= slots[i - 1])
+      if (slots[i] <= slots[i - 1]) {
         slots[i] = slots[i - 1] + 0.01; // break ties
+      }
     }
     final assigned = {
       for (var i = 0; i < items.length; i++) items[i].id: slots[i],
@@ -313,7 +314,7 @@ final taskByIdProvider = Provider.family<TaskItem?, String>((ref, id) {
 
 // ---- Views: a smart view (Today...) OR a custom list ----
 
-enum SmartView { today, upcoming, all, completed }
+enum SmartView { all, today, upcoming, noDate, completed }
 
 extension SmartViewX on SmartView {
   String get label => switch (this) {
@@ -321,6 +322,7 @@ extension SmartViewX on SmartView {
     SmartView.upcoming => 'Upcoming',
     SmartView.all => 'All',
     SmartView.completed => 'Completed',
+    SmartView.noDate => 'No Date',
   };
 }
 
@@ -347,12 +349,12 @@ class ViewSelection {
       tag = null;
 
   @override
-  bool operator ==(Object o) =>
-      o is ViewSelection &&
-      o.smart == smart &&
-      o.listId == listId &&
-      o.tag == tag &&
-      o.filterId == filterId;
+  bool operator ==(Object other) =>
+      other is ViewSelection &&
+      other.smart == smart &&
+      other.listId == listId &&
+      other.tag == tag &&
+      other.filterId == filterId;
   @override
   int get hashCode => Object.hash(smart, listId, tag, filterId);
 }
@@ -373,8 +375,7 @@ bool matchesSmart(TaskItem t, SmartView v, DateTime now) {
   final tomorrow = today.add(const Duration(days: 1));
   switch (v) {
     case SmartView.today:
-      return !t.done &&
-          t.due != null &&
+      return t.due != null &&
           (isSameDay(t.due!, now) || t.due!.isBefore(today)); // incl. overdue
     case SmartView.upcoming:
       return !t.done && t.due != null && !t.due!.isBefore(tomorrow);
@@ -382,6 +383,8 @@ bool matchesSmart(TaskItem t, SmartView v, DateTime now) {
       return !t.done;
     case SmartView.completed:
       return t.done;
+    case SmartView.noDate:
+      return t.due == null;
   }
 }
 
@@ -411,7 +414,11 @@ final visibleTasksProvider = Provider<List<TaskItem>>((ref) {
 final smartCountProvider = Provider.family<int, SmartView>((ref, v) {
   final tasks = ref.watch(taskControllerProvider).value ?? [];
   final now = DateTime.now();
-  return tasks.where((t) => matchesSmart(t, v, now)).length;
+
+  return tasks.where((t) {
+    if (t.done) return false; // don't count completed tasks
+    return matchesSmart(t, v, now);
+  }).length;
 });
 
 final listCountProvider = Provider.family<int, String>((ref, listId) {
@@ -450,6 +457,8 @@ final todayProgressProvider = Provider<(int, int)>((ref) {
         (t) => t.done && !t.wontDo && t.due != null && isSameDay(t.due!, now),
       )
       .length;
-  final open = tasks.where((t) => matchesSmart(t, SmartView.today, now)).length;
-  return (done, done + open);
+  final total = tasks
+      .where((t) => matchesSmart(t, SmartView.today, now))
+      .length;
+  return (done, total);
 });

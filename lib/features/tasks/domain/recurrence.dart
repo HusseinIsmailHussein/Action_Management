@@ -2,7 +2,18 @@ enum RepeatUnit { day, week, month, year }
 
 const _weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _monthNames = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 String _fmt(DateTime d) => '${_monthNames[d.month - 1]} ${d.day}, ${d.year}';
@@ -15,7 +26,8 @@ class Recurrence {
   final RepeatUnit unit;
   final int interval;
   final bool fromCompletion;
-  final Set<int> weekdays; // DateTime.monday..sunday; only used for weekly rules
+  final Set<int>
+  weekdays; // DateTime.monday..sunday; only used for weekly rules
   final DateTime? until; // last allowed date (inclusive)
   final int? count; // occurrences left, including the current one
 
@@ -40,15 +52,14 @@ class Recurrence {
     bool clearUntil = false,
     int? count,
     bool clearCount = false,
-  }) =>
-      Recurrence(
-        unit: unit ?? this.unit,
-        interval: interval ?? this.interval,
-        fromCompletion: fromCompletion ?? this.fromCompletion,
-        weekdays: weekdays ?? this.weekdays,
-        until: clearUntil ? null : (until ?? this.until),
-        count: clearCount ? null : (count ?? this.count),
-      );
+  }) => Recurrence(
+    unit: unit ?? this.unit,
+    interval: interval ?? this.interval,
+    fromCompletion: fromCompletion ?? this.fromCompletion,
+    weekdays: weekdays ?? this.weekdays,
+    until: clearUntil ? null : (until ?? this.until),
+    count: clearCount ? null : (count ?? this.count),
+  );
 
   /// The occurrence after [from], keeping the time of day.
   /// Month/year steps clamp to the month's last day (Jan 31 -> Feb 28).
@@ -56,9 +67,19 @@ class Recurrence {
     if (_weeklyOnDays) return _nextOnWeekdays(from);
     return switch (unit) {
       RepeatUnit.day => DateTime(
-          from.year, from.month, from.day + interval, from.hour, from.minute),
+        from.year,
+        from.month,
+        from.day + interval,
+        from.hour,
+        from.minute,
+      ),
       RepeatUnit.week => DateTime(
-          from.year, from.month, from.day + 7 * interval, from.hour, from.minute),
+        from.year,
+        from.month,
+        from.day + 7 * interval,
+        from.hour,
+        from.minute,
+      ),
       RepeatUnit.month => _addMonths(from, interval),
       RepeatUnit.year => _addMonths(from, 12 * interval),
     };
@@ -70,12 +91,23 @@ class Recurrence {
     final days = weekdays.toList()..sort();
     for (final d in days) {
       if (d > from.weekday) {
-        return DateTime(from.year, from.month, from.day + (d - from.weekday),
-            from.hour, from.minute);
+        return DateTime(
+          from.year,
+          from.month,
+          from.day + (d - from.weekday),
+          from.hour,
+          from.minute,
+        );
       }
     }
     final delta = -(from.weekday - 1) + 7 * interval + (days.first - 1);
-    return DateTime(from.year, from.month, from.day + delta, from.hour, from.minute);
+    return DateTime(
+      from.year,
+      from.month,
+      from.day + delta,
+      from.hour,
+      from.minute,
+    );
   }
 
   /// For weekday rules: moves [due] forward to the first chosen weekday
@@ -83,7 +115,13 @@ class Recurrence {
   DateTime alignDue(DateTime due) {
     if (!_weeklyOnDays || weekdays.contains(due.weekday)) return due;
     for (var i = 1; i < 7; i++) {
-      final d = DateTime(due.year, due.month, due.day + i, due.hour, due.minute);
+      final d = DateTime(
+        due.year,
+        due.month,
+        due.day + i,
+        due.hour,
+        due.minute,
+      );
       if (weekdays.contains(d.weekday)) return d;
     }
     return due;
@@ -94,14 +132,24 @@ class Recurrence {
     final year = d.year + total ~/ 12;
     final month = total % 12 + 1;
     final lastDay = DateTime(year, month + 1, 0).day;
-    return DateTime(year, month, d.day > lastDay ? lastDay : d.day, d.hour, d.minute);
+    return DateTime(
+      year,
+      month,
+      d.day > lastDay ? lastDay : d.day,
+      d.hour,
+      d.minute,
+    );
   }
 
   /// The rule without its end condition: "Daily", "Weekly on Mon, Thu"...
   String get ruleLabel {
     if (_weeklyOnDays) {
-      final days = (weekdays.toList()..sort()).map((d) => _weekdayNames[d - 1]).join(', ');
-      return interval == 1 ? 'Weekly on $days' : 'Every $interval weeks on $days';
+      final days = (weekdays.toList()..sort())
+          .map((d) => _weekdayNames[d - 1])
+          .join(', ');
+      return interval == 1
+          ? 'Weekly on $days'
+          : 'Every $interval weeks on $days';
     }
     if (interval == 1) {
       return switch (unit) {
@@ -116,7 +164,9 @@ class Recurrence {
 
   String get endLabel => until != null
       ? 'On ${_fmt(until!)}'
-      : (count != null ? 'After $count ${count == 1 ? 'time' : 'times'}' : 'Never');
+      : (count != null
+            ? 'After $count ${count == 1 ? 'time' : 'times'}'
+            : 'Never');
 
   String get label {
     var s = ruleLabel;
@@ -127,37 +177,43 @@ class Recurrence {
   }
 
   Map<String, dynamic> toJson() => {
-        'unit': unit.index,
-        'interval': interval,
-        'fromCompletion': fromCompletion,
-        'weekdays': (weekdays.toList()..sort()),
-        'until': until?.toIso8601String(),
-        'count': count,
-      };
+    'unit': unit.index,
+    'interval': interval,
+    'fromCompletion': fromCompletion,
+    'weekdays': (weekdays.toList()..sort()),
+    'until': until?.toIso8601String(),
+    'count': count,
+  };
 
   factory Recurrence.fromJson(Map<String, dynamic> j) => Recurrence(
-        unit: RepeatUnit.values[j['unit'] as int],
-        interval: j['interval'] as int,
-        fromCompletion: (j['fromCompletion'] ?? false) as bool,
-        weekdays: {...List<int>.from((j['weekdays'] ?? const []) as List)},
-        until: j['until'] == null ? null : DateTime.parse(j['until'] as String),
-        count: j['count'] as int?,
-      );
+    unit: RepeatUnit.values[j['unit'] as int],
+    interval: j['interval'] as int,
+    fromCompletion: (j['fromCompletion'] ?? false) as bool,
+    weekdays: {...List<int>.from((j['weekdays'] ?? const []) as List)},
+    until: j['until'] == null ? null : DateTime.parse(j['until'] as String),
+    count: j['count'] as int?,
+  );
 
   @override
-  bool operator ==(Object o) =>
-      o is Recurrence &&
-      o.unit == unit &&
-      o.interval == interval &&
-      o.fromCompletion == fromCompletion &&
-      o.until == until &&
-      o.count == count &&
-      o.weekdays.length == weekdays.length &&
-      o.weekdays.containsAll(weekdays);
+  bool operator ==(Object other) =>
+      other is Recurrence &&
+      other.unit == unit &&
+      other.interval == interval &&
+      other.fromCompletion == fromCompletion &&
+      other.until == until &&
+      other.count == count &&
+      other.weekdays.length == weekdays.length &&
+      other.weekdays.containsAll(weekdays);
 
   @override
   int get hashCode => Object.hash(
-      unit, interval, fromCompletion, until, count, Object.hashAllUnordered(weekdays));
+    unit,
+    interval,
+    fromCompletion,
+    until,
+    count,
+    Object.hashAllUnordered(weekdays),
+  );
 }
 
 const kRepeatPresets = <Recurrence>[
