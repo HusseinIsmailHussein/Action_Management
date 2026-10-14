@@ -4,7 +4,7 @@ import '../../tasks/application/task_controller.dart';
 import '../../tasks/domain/next_occurrence.dart';
 import 'calendar_entry.dart';
 
-enum CalendarMode { month, day }
+enum CalendarMode { month, week, threeDay, day }
 
 class CalendarState {
   final DateTime selectedDay;
@@ -12,6 +12,21 @@ class CalendarState {
   final CalendarMode mode;
   const CalendarState(
       {required this.selectedDay, required this.focusedMonth, required this.mode});
+
+  /// How many days a timeline view shows (0 for the month grid).
+  int get dayCount => switch (mode) {
+        CalendarMode.month => 0,
+        CalendarMode.day => 1,
+        CalendarMode.threeDay => 3,
+        CalendarMode.week => 7,
+      };
+
+  /// First day of a timeline view: the week's first day, else the selected day.
+  DateTime get firstVisibleDay {
+    if (mode != CalendarMode.week) return selectedDay;
+    final offset = (selectedDay.weekday - kFirstWeekday + 7) % 7;
+    return DateTime(selectedDay.year, selectedDay.month, selectedDay.day - offset);
+  }
 
   CalendarState copyWith(
           {DateTime? selectedDay, DateTime? focusedMonth, CalendarMode? mode}) =>
@@ -54,6 +69,11 @@ final calendarControllerProvider =
 /// Repeats are only projected inside this window.
 final visibleRangeProvider = Provider<(DateTime, DateTime)>((ref) {
   final cal = ref.watch(calendarControllerProvider);
+  if (cal.dayCount > 1) {
+    // Week / 3-day views: project repeats over exactly the days on screen.
+    final first = cal.firstVisibleDay;
+    return (first, DateTime(first.year, first.month, first.day + cal.dayCount - 1));
+  }
   final monthStart = cal.focusedMonth;
   final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
   final from = cal.selectedDay.isBefore(monthStart) ? cal.selectedDay : monthStart;
